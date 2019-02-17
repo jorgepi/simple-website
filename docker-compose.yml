@@ -1,0 +1,9 @@
+version: '2'
+services:
+    my-webserver:
+        image: nginx:alpine
+        restart: always
+        ports:
+            - 80:80
+        volumes:
+            - ./static-content/index.html:/usr/share/nginx/html/index.html
