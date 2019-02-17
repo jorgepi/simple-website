@@ -3,7 +3,7 @@
 ############
 
 resource "aws_vpc" "vpc" {
-  cidr_block = "${var.vpc_cidr}"
+  cidr_block           = "${var.vpc_cidr}"
   enable_dns_hostnames = true
 
   tags = "${merge(map("Name", var.vpc_name), var.tags)}"
@@ -21,10 +21,10 @@ resource "aws_internet_gateway" "gw" {
 
 # Subnet (public)
 resource "aws_subnet" "public_subnet" {
-  count = "${length(var.aws_zones)}"
-  vpc_id = "${aws_vpc.vpc.id}"
-  cidr_block = "${cidrsubnet(var.vpc_cidr, 8, count.index)}"
-  availability_zone = "${var.aws_zones[count.index]}"
+  count                   = "${length(var.aws_zones)}"
+  vpc_id                  = "${aws_vpc.vpc.id}"
+  cidr_block              = "${cidrsubnet(var.vpc_cidr, 8, count.index)}"
+  availability_zone       = "${var.aws_zones[count.index]}"
   map_public_ip_on_launch = true
 
   tags = "${merge(map("Name", format("%v-public-%v", var.vpc_name, var.aws_zones[count.index])), var.tags)}"
@@ -36,13 +36,13 @@ resource "aws_subnet" "public_subnet" {
 
 resource "aws_eip" "nat" {
   count = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
-  vpc      = true
+  vpc   = true
 }
 
 resource "aws_nat_gateway" "nat" {
-  count = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
+  count         = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
   allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
-  subnet_id = "${element(aws_subnet.public_subnet.*.id, count.index)}"
+  subnet_id     = "${element(aws_subnet.public_subnet.*.id, count.index)}"
 
   tags = "${merge(map("Name", format("%v-nat-%v", var.vpc_name, var.aws_zones[count.index])), var.tags)}"
 
@@ -51,10 +51,10 @@ resource "aws_nat_gateway" "nat" {
 
 # Subnet (private)
 resource "aws_subnet" "private_subnet" {
-  count = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
-  vpc_id = "${aws_vpc.vpc.id}"
-  cidr_block = "${cidrsubnet(var.vpc_cidr, 8, count.index + length(var.aws_zones))}"
-  availability_zone = "${var.aws_zones[count.index]}"
+  count                   = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
+  vpc_id                  = "${aws_vpc.vpc.id}"
+  cidr_block              = "${cidrsubnet(var.vpc_cidr, 8, count.index + length(var.aws_zones))}"
+  availability_zone       = "${var.aws_zones[count.index]}"
   map_public_ip_on_launch = false
 
   tags = "${merge(map("Name", format("%v-private-%v", var.vpc_name, var.aws_zones[count.index])), var.tags)}"
@@ -77,8 +77,8 @@ resource "aws_route_table" "route" {
 }
 
 resource "aws_route_table_association" "route" {
-  count = "${length(var.aws_zones)}"
-  subnet_id = "${element(aws_subnet.public_subnet.*.id, count.index)}"
+  count          = "${length(var.aws_zones)}"
+  subnet_id      = "${element(aws_subnet.public_subnet.*.id, count.index)}"
   route_table_id = "${aws_route_table.route.id}"
 }
 
@@ -87,7 +87,7 @@ resource "aws_route_table_association" "route" {
 ############
 
 resource "aws_route_table" "private_route" {
-  count = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
+  count  = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
   vpc_id = "${aws_vpc.vpc.id}"
 
   # Default route through NAT
@@ -100,7 +100,7 @@ resource "aws_route_table" "private_route" {
 }
 
 resource "aws_route_table_association" "private_route" {
-  count = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
-  subnet_id = "${element(aws_subnet.private_subnet.*.id, count.index)}"
+  count          = "${var.private_subnets == "true" ? length(var.aws_zones) : 0}"
+  subnet_id      = "${element(aws_subnet.private_subnet.*.id, count.index)}"
   route_table_id = "${element(aws_route_table.private_route.*.id, count.index)}"
 }
